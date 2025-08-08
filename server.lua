@@ -67,6 +67,9 @@ end)
 
 RegisterServerEvent('SEM_InteractionMenu:Jail')
 AddEventHandler('SEM_InteractionMenu:Jail', function(ID, Time)
+	local sourceCoords = GetEntityCoords(GetPlayerPed(source))
+	local targetCoords = GetEntityCoords(GetPlayerPed(ID))
+	local distance = #(sourceCoords - targetCoords)
 	if ID == -1 or ID == '-1' then
 		if source ~= '' then
 			print('^1[#' .. source .. '] ' .. GetPlayerName(source) .. '  -  attempted to jail all players^7')
@@ -75,6 +78,12 @@ AddEventHandler('SEM_InteractionMenu:Jail', function(ID, Time)
 			print('^1Someone attempted to jail all players^7')
 		end
 
+		return
+	end
+	
+	if distance > 15.0 then
+		TriggerClientEvent('chatMessage', source, 'System', {255, 0, 0}, 'You are too far away to jail this player.')
+		print('^1Someone attempted to jail from more than 15m away!^7')
 		return
 	end
 	
