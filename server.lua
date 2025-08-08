@@ -67,9 +67,7 @@ end)
 
 RegisterServerEvent('SEM_InteractionMenu:Jail')
 AddEventHandler('SEM_InteractionMenu:Jail', function(ID, Time)
-	local sourceCoords = GetEntityCoords(GetPlayerPed(source))
-	local targetCoords = GetEntityCoords(GetPlayerPed(ID))
-	local distance = #(sourceCoords - targetCoords)
+	-- Security check for jail all players attempt
 	if ID == -1 or ID == '-1' then
 		if source ~= '' then
 			print('^1[#' .. source .. '] ' .. GetPlayerName(source) .. '  -  attempted to jail all players^7')
@@ -77,16 +75,36 @@ AddEventHandler('SEM_InteractionMenu:Jail', function(ID, Time)
 		else
 			print('^1Someone attempted to jail all players^7')
 		end
-
 		return
 	end
 	
+	-- Get player peds for distance check
+	local sourcePed = GetPlayerPed(source)
+	local targetPed = GetPlayerPed(ID)
+	
+	-- Validate both players exist
+	if not sourcePed or not targetPed or sourcePed == 0 or targetPed == 0 then
+		TriggerClientEvent('chatMessage', source, 'System', {255, 0, 0}, 'Could not find target player.')
+		print('^3[Jail] Failed to find player peds - Source: ' .. tostring(sourcePed) .. ', Target: ' .. tostring(targetPed) .. '^7')
+		return
+	end
+	
+	-- Get coordinates of both players
+	local sourceCoords = GetEntityCoords(sourcePed)
+	local targetCoords = GetEntityCoords(targetPed)
+	
+	-- Calculate distance between players
+	local distance = #(sourceCoords - targetCoords)
+	
+	-- Check if players are within 15 meters
 	if distance > 15.0 then
-		TriggerClientEvent('chatMessage', source, 'System', {255, 0, 0}, 'You are too far away to jail this player.')
-		print('^1Someone attempted to jail from more than 15m away!^7')
-		return
+		TriggerClientEvent('chatMessage', source, 'System', {255, 0, 0}, 'You are too far away to jail this player. Distance: ' .. math.floor(distance) .. 'm (Max: 15m)')
+		print('^3[Jail] Player #' .. source .. ' attempted to jail #' .. ID .. ' from ' .. math.floor(distance) .. 'm away (Max: 15m)^7')
+		return  -- Exit here, do not jail the player
 	end
 	
+	-- Only jail if distance check passed
+	print('^2[Jail] Player #' .. source .. ' jailed #' .. ID .. ' from ' .. math.floor(distance) .. 'm away (within 15m limit)^7')
 	TriggerClientEvent('SEM_InteractionMenu:JailPlayer', ID, Time)
 	TriggerClientEvent('chatMessage', -1, 'Judge', {86, 96, 252}, GetPlayerName(ID) .. ' has been Jailed for ' .. Time .. ' months(s)')
 end)

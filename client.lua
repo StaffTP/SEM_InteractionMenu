@@ -254,9 +254,11 @@ end)
 CurrentlyJailed = false
 EarlyRelease = false
 OriginalJailTime = 0
+JailThreadActive = false  -- Prevent multiple jail threads
 RegisterNetEvent('SEM_InteractionMenu:JailPlayer')
 AddEventHandler('SEM_InteractionMenu:JailPlayer', function(JailTime)
-     if CurrentlyJailed then
+    -- Prevent multiple jail instances
+    if CurrentlyJailed or JailThreadActive then
         return
     end
     if CurrentlyHospitaled then
@@ -264,6 +266,7 @@ AddEventHandler('SEM_InteractionMenu:JailPlayer', function(JailTime)
     end
 
     OriginalJailTime = JailTime
+    JailThreadActive = true  -- Mark thread as active immediately
 
     local Ped = PlayerPedId()
     if DoesEntityExist(Ped) then
@@ -303,15 +306,20 @@ AddEventHandler('SEM_InteractionMenu:JailPlayer', function(JailTime)
                 JailTime = JailTime - 1
             end
 
-            if EarlyRelease then
-                TriggerServerEvent('SEM_InteractionMenu:GlobalChat', {86, 96, 252}, 'Judge', GetPlayerName(PlayerId()) .. ' was released from Jail on Parole')
-            else
-                TriggerServerEvent('SEM_InteractionMenu:GlobalChat', {86, 96, 252}, 'Judge', GetPlayerName(PlayerId()) .. ' was released from Jail after ' .. OriginalJailTime .. ' months(s).')
+            -- Only send release message if still marked as jailed (prevents duplicate messages)
+            if CurrentlyJailed then
+                if EarlyRelease then
+                    TriggerServerEvent('SEM_InteractionMenu:GlobalChat', {86, 96, 252}, 'Judge', GetPlayerName(PlayerId()) .. ' was released from Jail on Parole')
+                else
+                    TriggerServerEvent('SEM_InteractionMenu:GlobalChat', {86, 96, 252}, 'Judge', GetPlayerName(PlayerId()) .. ' was released from Jail after ' .. OriginalJailTime .. ' months(s).')
+                end
+                SetEntityCoords(Ped, Config.JailLocation.Release.x, Config.JailLocation.Release.y, Config.JailLocation.Release.z)
+                SetEntityHeading(Ped, Config.JailLocation.Release.h)
             end
-            SetEntityCoords(Ped, Config.JailLocation.Release.x, Config.JailLocation.Release.y, Config.JailLocation.Release.z)
-            SetEntityHeading(Ped, Config.JailLocation.Release.h)
+            
             CurrentlyJailed = false
             EarlyRelease = false
+            JailThreadActive = false  -- Reset thread tracking
         end)
     end
 end)
